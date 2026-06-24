@@ -2,6 +2,7 @@ import secrets
 
 from fastapi import Response
 
+from .auth_cookies import cookie_flags
 from .config import settings
 
 CSRF_COOKIE = "csrf_token"
@@ -19,15 +20,14 @@ def set_csrf_cookie(response: Response, token: str) -> None:
         key=CSRF_COOKIE,
         value=token,
         httponly=False,
-        secure=settings.is_production,
-        samesite="strict" if settings.is_production else "lax",
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
         path="/",
+        **cookie_flags(),
     )
 
 
 def clear_csrf_cookie(response: Response) -> None:
-    response.delete_cookie(CSRF_COOKIE, path="/")
+    response.delete_cookie(CSRF_COOKIE, path="/", **cookie_flags())
 
 
 def validate_csrf(request) -> bool:

@@ -1,0 +1,63 @@
+# Blueprint Render (plano gratuito) — https://render.com
+# Repositório: https://github.com/fabiojamanta/QubrixSystem
+# No Render: New > Blueprint > conecte o repositório QubrixSystem.
+#
+# Após o deploy, defina manualmente no serviço qubrix-api:
+#   ADMIN_EMAIL  (ex.: admin@qubrix.com)
+#   ADMIN_PASSWORD  (senha forte; obrigatório em produção)
+
+databases:
+  - name: qubrix-db
+    plan: free
+    databaseName: qubrix
+    user: qubrix
+
+services:
+  - type: web
+    name: qubrix-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: qubrix-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ENV
+        value: production
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "120"
+      - key: REFRESH_TOKEN_EXPIRE_DAYS
+        value: "7"
+      - key: CORS_ORIGINS
+        fromService:
+          type: web
+          name: qubrix-frontend
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+
+  - type: web
+    name: qubrix-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && node scripts/set-api-url.js && npm run build
+    staticPublishPath: dist/qubrix-frontend/browser
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: QUBRIX_API_URL
+        fromService:
+          type: web
+          name: qubrix-api
+          envVarKey: RENDER_EXTERNAL_URL
