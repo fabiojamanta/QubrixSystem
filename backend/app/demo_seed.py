@@ -8,6 +8,7 @@ from .datetime_utils import now_br, today_br
 from .models import (
     Campaign,
     Client,
+    ClientContact,
     DescriptionChoice,
     InfoBoardItem,
     LostReason,
@@ -61,21 +62,62 @@ def seed_demo_data(db: Session, company_id: int = 1, force: bool = False) -> boo
     )
 
     clients = [
-        Client(company_id=company_id, name="Clínica Vida Nova", document="12.345.678/0001-90",
-               phone="(11) 3456-7890", email="compras@vidanova.com.br", city="São Paulo", state="SP",
-               address="Av. Paulista, 1000", notes="Cliente prioritário — pagamento 30 dias"),
-        Client(company_id=company_id, name="Hospital Santa Clara", document="98.765.432/0001-10",
-               phone="(21) 2345-6789", email="suprimentos@santaclara.com.br", city="Rio de Janeiro", state="RJ",
-               address="Rua das Flores, 500"),
-        Client(company_id=company_id, name="Farmácia Popular Centro", document="11.222.333/0001-44",
-               phone="(31) 9876-5432", email="pedidos@farmaciacentro.com.br", city="Belo Horizonte", state="MG",
-               address="Rua da Bahia, 200"),
-        Client(company_id=company_id, name="Lab Diagnóstico Plus", document="55.666.777/0001-88",
-               phone="(41) 3333-4444", email="lab@diagnosticoplus.com.br", city="Curitiba", state="PR",
-               address="Alameda Santos, 45"),
+        Client(
+            company_id=company_id,
+            name="Clínica Vida Nova",
+            document="12.345.678/0001-90",
+            phone="(11) 3456-7890",
+            email="compras@vidanova.com.br",
+            city="São Paulo",
+            state="SP",
+            address="Av. Paulista, 1000",
+            notes="Cliente prioritário — pagamento 30 dias",
+            responsible_user_id=vendedor1.id,
+        ),
+        Client(
+            company_id=company_id,
+            name="Hospital Santa Clara",
+            document="98.765.432/0001-10",
+            phone="(21) 2345-6789",
+            email="suprimentos@santaclara.com.br",
+            city="Rio de Janeiro",
+            state="RJ",
+            address="Rua das Flores, 500",
+            responsible_user_id=vendedor1.id,
+        ),
+        Client(
+            company_id=company_id,
+            name="Farmácia Popular Centro",
+            document="11.222.333/0001-44",
+            phone="(31) 9876-5432",
+            email="pedidos@farmaciacentro.com.br",
+            city="Belo Horizonte",
+            state="MG",
+            address="Rua da Bahia, 200",
+            responsible_user_id=vendedor2.id,
+        ),
+        Client(
+            company_id=company_id,
+            name="Lab Diagnóstico Plus",
+            document="55.666.777/0001-88",
+            phone="(41) 3333-4444",
+            email="lab@diagnosticoplus.com.br",
+            city="Curitiba",
+            state="PR",
+            address="Alameda Santos, 45",
+            responsible_user_id=vendedor2.id,
+        ),
     ]
     db.add_all(clients)
     db.flush()
+    for client in clients:
+        client.registration_number = f"{client.id:06d}"
+    db.add_all([
+        ClientContact(client_id=clients[0].id, name="Carlos Compras", phone="(11) 98888-1111", email="carlos@vidanova.com.br", sort_order=0),
+        ClientContact(client_id=clients[0].id, name="Financeiro", phone="(11) 98888-2222", email="financeiro@vidanova.com.br", sort_order=1),
+        ClientContact(client_id=clients[1].id, name="Suprimentos", phone="(21) 97777-3333", email="suprimentos@santaclara.com.br", sort_order=0),
+        ClientContact(client_id=clients[2].id, name="Pedidos", phone="(31) 96666-4444", email="pedidos@farmaciacentro.com.br", sort_order=0),
+    ])
 
     products_data = [
         ("MED-001", "Soro Fisiológico 0,9% 500ml", "Soro fisiológico estéril para uso hospitalar, frasco 500ml.",

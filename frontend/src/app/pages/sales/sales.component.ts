@@ -13,8 +13,18 @@ import { PageHeaderComponent } from '../../shared/page-header.component';
   imports: [CommonModule, FormsModule, DateBrPipe, PageHeaderComponent],
   template: `
 <app-page-header title="Vendas / Faturamento" description="Gerencial vê tudo; vendedor vê somente as próprias vendas." />
-<div class="grid grid-3 card filters">
-  <div><label>Período (meses)</label><select [(ngModel)]="months" (ngModelChange)="load()"><option [ngValue]="1">1 mês</option><option [ngValue]="3">3 meses</option><option [ngValue]="12">12 meses</option><option [ngValue]="36">36 meses</option></select></div>
+<div class="grid grid-4 card filters">
+  @if(auth.isManagement()){
+    <div>
+      <label>Vendedor</label>
+      <select [(ngModel)]="filterSellerId" (ngModelChange)="load()">
+        <option [ngValue]="null">Todos</option>
+        @for(s of sellers; track s.id){ <option [ngValue]="s.id">{{ s.name }}</option> }
+      </select>
+    </div>
+  }
+  <div><label>Data inicial</label><input type="date" [(ngModel)]="filterFrom" (ngModelChange)="load()"></div>
+  <div><label>Data final</label><input type="date" [(ngModel)]="filterTo" (ngModelChange)="load()"></div>
 </div>
 @if(summary){
   <div class="grid grid-2">
@@ -44,15 +54,30 @@ import { PageHeaderComponent } from '../../shared/page-header.component';
 export class SalesComponent implements OnInit {
   rows: any[] = [];
   summary: any = null;
-  months = 12;
+  sellers: { id: number; name: string }[] = [];
+  filterSellerId: number | null = null;
+  filterFrom = '';
+  filterTo = '';
   expandedId: number | null = null;
   detail: any = null;
   error = '';
   constructor(public auth: AuthService, private api: ApiService) {}
-  ngOnInit() { this.load(); }
+  ngOnInit() {
+    if (this.auth.isManagement()) {
+      this.api.get<{ id: number; name: string }[]>('/clients/sellers').subscribe({
+        next: (r) => (this.sellers = r),
+        error: () => {},
+      });
+    }
+    this.load();
+  }
   load() {
-    this.api.get<any[]>('/sales', { months: this.months }).subscribe({ next:(r)=>this.rows=r, error:e=>this.error=formatApiError(e.error?.detail) });
-    this.api.get<any>('/sales/summary', { months: this.months }).subscribe({ next:(s)=>this.summary=s });
+    this.api.get<any[]>('/sales', {
+      user_id: this.filterSellerId,
+      date_from: this.filterFrom || null,
+      date_to: this.filterTo || null,
+    }).subscribe({ next:(r)=>this.rows=r, error:e=>this.error=formatApiError(e.error?.detail) });
+    this.api.get<any>('/sales/summary', { months: 12 }).subscribe({ next:(s)=>this.summary=s });
   }
   toggle(id:number){
     if(this.expandedId===id){ this.expandedId=null; this.detail=null; return; }

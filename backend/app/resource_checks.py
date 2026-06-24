@@ -13,10 +13,19 @@ def assert_owner_or_management(user: User, owner_user_id: int) -> None:
         raise HTTPException(403, "Acesso negado")
 
 
-def get_client_in_company(db: Session, user: User, client_id: int) -> Client:
+def assert_client_access(user: User, client: Client) -> None:
+    if user_is_management(user):
+        return
+    if client.responsible_user_id != user.id:
+        raise HTTPException(403, "Acesso negado")
+
+
+def get_client_in_company(db: Session, user: User, client_id: int, *, check_access: bool = True) -> Client:
     client = db.query(Client).filter(Client.id == client_id, Client.company_id == user.company_id).first()
     if not client:
         raise HTTPException(400, "Cliente inválido")
+    if check_access:
+        assert_client_access(user, client)
     return client
 
 

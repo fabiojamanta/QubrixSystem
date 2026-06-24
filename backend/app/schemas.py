@@ -40,6 +40,12 @@ class ProductClientPriceIn(BaseModel):
     price: Decimal = Field(ge=0)
 
 
+class ClientContactIn(BaseModel):
+    name: Optional[str] = Field(default=None, max_length=120)
+    phone: Optional[str] = Field(default=None, max_length=40)
+    email: Optional[EmailStr] = Field(default=None, max_length=160)
+
+
 class ClientBase(BaseModel):
     name: str = Field(min_length=1, max_length=180)
     document: Optional[str] = Field(default=None, max_length=40)
@@ -49,7 +55,16 @@ class ClientBase(BaseModel):
     city: Optional[str] = Field(default=None, max_length=120)
     state: Optional[str] = Field(default=None, max_length=2)
     notes: Optional[str] = Field(default=None, max_length=2000)
+    responsible_user_id: Optional[int] = Field(default=None, gt=0)
+    contacts: list[ClientContactIn] = Field(default_factory=list, max_length=3)
     active: bool = True
+
+    @field_validator("contacts")
+    @classmethod
+    def limit_contacts(cls, value: list[ClientContactIn]) -> list[ClientContactIn]:
+        if len(value) > 3:
+            raise ValueError("Máximo de 3 contatos por cliente")
+        return value
 
 
 class ClientCreate(ClientBase):

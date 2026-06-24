@@ -10,11 +10,13 @@ from .config import settings
 from .security import get_password_hash, validate_password_strength
 from .routers import auth, dashboard, products, clients, stock, quotes, orders, sales, campaigns, info_board, users
 from .profile_seed import seed_profiles, sync_menu_catalog
+from .schema_migrate import apply_schema_patches
 from .demo_seed import seed_demo_data
 from .middleware import SecurityHeadersMiddleware, CsrfMiddleware
 from .rate_limit import limiter
 
 Base.metadata.create_all(bind=engine)
+apply_schema_patches()
 
 
 def seed():

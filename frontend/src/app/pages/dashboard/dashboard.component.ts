@@ -10,7 +10,7 @@ import { PAGE_LOGOS } from '../../shared/page-logos';
   standalone: true,
   imports: [CommonModule, DateBrPipe, PageHeaderComponent],
   template: `
-<app-page-header title="Dashboard" description="Campanhas, propostas, vendas e validade de estoque." [logoSrc]="logo" logoAlt="Dashboard" />
+<app-page-header title="Dashboard" description="Campanhas, vendas, propostas e validade de estoque." [logoSrc]="logo" logoAlt="Dashboard" />
 @if(!data){<p class="empty">Carregando...</p>}
 @if(data){
   <section class="card dash-panel">
@@ -29,11 +29,33 @@ import { PAGE_LOGOS } from '../../shared/page-logos';
 
   <div class="grid grid-2">
     <section class="card dash-panel">
+      <h3 class="dash-section-title">Vendas</h3>
+      <div class="grid grid-2">
+        <div class="card stat"><b>{{ data.sales_summary.month_total | currency:'BRL' }}</b><span>Mês atual</span></div>
+        <div class="card stat"><b>{{ data.sales_summary.last_year_same_period | currency:'BRL' }}</b><span>Mesmo período ano anterior</span></div>
+      </div>
+      @for (m of data.sales_summary.last_3_months; track m.month) {
+        <div class="dash-item dash-item-ok">
+          <div class="dash-product-name">{{ m.month }}</div>
+          <div class="dash-detail-line">{{ m.total | currency:'BRL' }}</div>
+        </div>
+      }
+    </section>
+
+    <section class="card dash-panel dash-panel-compact">
       <h3 class="dash-section-title">Informações para a equipe</h3>
       @for (i of data.info_board; track i.id) {
-        <div class="dash-item"><div class="dash-product-name">{{ i.title }}</div><div class="dash-details"><div class="dash-detail-line">{{ i.content }}</div></div></div>
+        <div class="dash-item dash-item-ok dash-item-compact">
+          <div class="dash-product-name">{{ i.title }}</div>
+          <div class="dash-details">
+            <div class="dash-detail-line">{{ i.content }}</div>
+          </div>
+        </div>
       } @empty { <p class="empty">Nenhuma informação publicada.</p> }
     </section>
+  </div>
+
+  <div class="grid grid-2">
     <section class="card dash-panel">
       <h3 class="dash-section-title">Propostas (30 dias)</h3>
       <div class="grid grid-3">
@@ -50,19 +72,7 @@ import { PAGE_LOGOS } from '../../shared/page-logos';
         </div>
       }
     </section>
-  </div>
 
-  <div class="grid grid-2">
-    <section class="card dash-panel">
-      <h3 class="dash-section-title">Vendas</h3>
-      <div class="grid grid-2">
-        <div class="card stat"><b>{{ data.sales_summary.month_total | currency:'BRL' }}</b><span>Mês atual</span></div>
-        <div class="card stat"><b>{{ data.sales_summary.last_year_same_period | currency:'BRL' }}</b><span>Mesmo período ano anterior</span></div>
-      </div>
-      @for (m of data.sales_summary.last_3_months; track m.month) {
-        <div class="dash-item"><div class="dash-product-name">{{ m.month }}</div><div class="dash-detail-line">{{ m.total | currency:'BRL' }}</div></div>
-      }
-    </section>
     <section class="card dash-panel">
       <h3 class="dash-section-title">Validade de produtos</h3>
       <div class="grid grid-3">
@@ -73,7 +83,15 @@ import { PAGE_LOGOS } from '../../shared/page-logos';
     </section>
   </div>
 }`,
-  styles: [`.bar-track{height:8px;background:rgba(0,0,0,.08);border-radius:999px;overflow:hidden;margin-top:6px}.bar-fill{height:100%;background:var(--brand)}`],
+  styles: [`
+    .bar-track{height:8px;background:rgba(0,0,0,.08);border-radius:999px;overflow:hidden;margin-top:6px}
+    .bar-fill{height:100%;background:var(--brand)}
+    .dash-panel-compact .dash-section-title { margin-bottom: 10px; }
+    .dash-item-compact { padding: 8px 10px; margin-bottom: 8px; }
+    .dash-item-compact .dash-product-name { font-size: 14px; }
+    .dash-item-compact .dash-details { margin-top: 4px; margin-left: 0.75rem; }
+    .dash-item-compact .dash-detail-line { font-size: 12px; }
+  `],
 })
 export class DashboardComponent implements OnInit {
   logo = PAGE_LOGOS.dashboard;

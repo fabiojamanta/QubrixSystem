@@ -46,7 +46,10 @@ def _serialize_sale(s: Sale, include_items=False) -> dict:
 
 @router.get("")
 def list_sales(
-    months: int = 1,
+    months: int | None = None,
+    user_id: int | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -58,13 +61,24 @@ def list_sales(
     )
     if not user_is_management(user):
         query = query.filter(Sale.user_id == user.id)
-    if months and months < 36:
+    elif user_id:
+        seller = db.query(User).filter(User.id == user_id, User.company_id == user.company_id, User.active == True).first()
+        if not seller:
+            raise HTTPException(400, "Vendedor inválido")
+        query = query.filter(Sale.user_id == user_id)
+
+    if date_from:
+        query = query.filter(Sale.sale_date >= date_from)
+    if date_to:
+        query = query.filter(Sale.sale_date <= date_to)
+    elif not date_from and months and months < 36:
         from ..datetime_utils import today_br
         from datetime import timedelta
         start = today_br().replace(day=1)
         for _ in range(months - 1):
             start = (start - timedelta(days=1)).replace(day=1)
         query = query.filter(Sale.sale_date >= start)
+
     rows = query.order_by(Sale.sale_date.desc()).all()
     return [_serialize_sale(s) for s in rows]
 

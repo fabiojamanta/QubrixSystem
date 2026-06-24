@@ -178,6 +178,7 @@ class Client(Base):
     __tablename__ = "clients"
     id = Column(Integer, primary_key=True)
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=False, default=1)
+    registration_number = Column(String(40), index=True)
     name = Column(String(180), nullable=False)
     document = Column(String(40))
     phone = Column(String(40))
@@ -186,9 +187,28 @@ class Client(Base):
     city = Column(String(120))
     state = Column(String(2))
     notes = Column(Text)
+    responsible_user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     active = Column(Boolean, default=True)
     created_at = Column(DateTime, server_default=func.now())
+    responsible_user = relationship("User", foreign_keys=[responsible_user_id])
+    contacts = relationship(
+        "ClientContact",
+        back_populates="client",
+        cascade="all, delete-orphan",
+        order_by="ClientContact.sort_order",
+    )
     product_prices = relationship("ProductClientPrice", back_populates="client", cascade="all, delete-orphan")
+
+
+class ClientContact(Base):
+    __tablename__ = "client_contacts"
+    id = Column(Integer, primary_key=True)
+    client_id = Column(Integer, ForeignKey("clients.id"), nullable=False, index=True)
+    name = Column(String(120))
+    phone = Column(String(40))
+    email = Column(String(160))
+    sort_order = Column(Integer, default=0, nullable=False)
+    client = relationship("Client", back_populates="contacts")
 
 
 class StockLot(Base):

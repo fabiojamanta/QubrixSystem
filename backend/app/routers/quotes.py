@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from ..business_rules import product_display_description, profitability_for_price, resolve_unit_price
@@ -105,6 +106,17 @@ def list_quotes(
         query = query.filter(Quote.created_at <= f"{date_to} 23:59:59")
     rows = query.order_by(Quote.created_at.desc()).all()
     return [_serialize_quote(q, db) for q in rows]
+
+
+@router.get("/next-number")
+def next_quote_number(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    assert_menu_access(db, user, "cotacoes", AccessLevel.read)
+    max_id = (
+        db.query(func.max(Quote.id))
+        .filter(Quote.company_id == user.company_id)
+        .scalar()
+    ) or 0
+    return {"next_number": max_id + 1}
 
 
 @router.get("/{quote_id}")
