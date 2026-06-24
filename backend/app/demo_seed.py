@@ -27,6 +27,7 @@ from .models import (
     User,
 )
 from .security import get_password_hash
+from .config import settings
 
 
 def _has_demo_data(db: Session, company_id: int = 1) -> bool:
@@ -352,8 +353,11 @@ def _clear_demo_data(db: Session, company_id: int) -> None:
     db.query(Client).filter(Client.company_id == company_id).delete()
     db.query(Campaign).filter(Campaign.company_id == company_id).delete()
     db.query(InfoBoardItem).filter(InfoBoardItem.company_id == company_id).delete()
+    admin_emails = {"admin@qubrix.com"}
+    if settings.ADMIN_EMAIL.strip():
+        admin_emails.add(settings.ADMIN_EMAIL.strip())
     db.query(User).filter(
         User.company_id == company_id,
-        User.email.notin_(["admin@qubrix.com"]),
+        User.email.notin_(admin_emails),
     ).delete(synchronize_session=False)
     db.flush()

@@ -48,7 +48,7 @@ def seed():
                     active=True,
                 ))
         sync_menu_catalog(db)
-        if settings.SEED_DEMO_DATA and not settings.is_production:
+        if settings.SEED_DEMO_DATA:
             seed_demo_data(db)
         db.commit()
     except Exception:

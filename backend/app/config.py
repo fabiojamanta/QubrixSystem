@@ -50,7 +50,9 @@ class Settings(BaseSettings):
         if self.is_production and self.SECRET_KEY == INSECURE_SECRET_PLACEHOLDER:
             raise ValueError("SECRET_KEY deve ser definida em produção (ENV=production)")
         if self.is_production:
-            self.SEED_DEMO_DATA = False
+            explicit = os.environ.get("SEED_DEMO_DATA", "").strip().lower()
+            if explicit not in ("true", "1", "yes"):
+                self.SEED_DEMO_DATA = False
         return self
 
     class Config:
