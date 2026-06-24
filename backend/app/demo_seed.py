@@ -1,4 +1,4 @@
-"""Dados de demonstração para o Sistema Marcelo."""
+"""Dados de demonstração para o QuBrix."""
 from datetime import timedelta
 from decimal import Decimal
 
@@ -48,15 +48,15 @@ def seed_demo_data(db: Session, company_id: int = 1, force: bool = False) -> boo
 
     vendedor1 = _ensure_user(
         db, company_id, vendedor_profile.id,
-        "Carlos Vendedor", "carlos@marcelo.com", "Vendedor@1234",
+        "Carlos Vendedor", "carlos@qubrix.com", "Vendedor@1234",
     )
     vendedor2 = _ensure_user(
         db, company_id, vendedor_profile.id,
-        "Ana Souza", "ana@marcelo.com", "Vendedor@1234",
+        "Ana Souza", "ana@qubrix.com", "Vendedor@1234",
     )
     gerente = _ensure_user(
         db, company_id, gerencia.id,
-        "Maria Gerente", "maria@marcelo.com", "Gerencia@1234",
+        "Maria Gerente", "maria@qubrix.com", "Gerencia@1234",
     )
 
     clients = [
@@ -354,6 +354,6 @@ def _clear_demo_data(db: Session, company_id: int) -> None:
     db.query(InfoBoardItem).filter(InfoBoardItem.company_id == company_id).delete()
     db.query(User).filter(
         User.company_id == company_id,
-        User.email.notin_(["admin@marcelo.com"]),
+        User.email.notin_(["admin@qubrix.com"]),
     ).delete(synchronize_session=False)
     db.flush()

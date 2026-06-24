@@ -8,13 +8,13 @@ INSECURE_SECRET_PLACEHOLDER = "troque-esta-chave-em-producao"
 
 
 class Settings(BaseSettings):
-    DATABASE_URL: str = "sqlite:///./sistema_marcelo.db"
+    DATABASE_URL: str = "sqlite:///./qubrix.db"
     ENV: str = "development"
     SECRET_KEY: str = INSECURE_SECRET_PLACEHOLDER
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 120
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     CORS_ORIGINS: str = "http://localhost:4201,http://127.0.0.1:4201"
-    APP_NAME: str = "Sistema Marcelo"
+    APP_NAME: str = "QuBrix"
     TIMEZONE: str = "America/Sao_Paulo"
     ADMIN_EMAIL: str = ""
     ADMIN_PASSWORD: str = ""

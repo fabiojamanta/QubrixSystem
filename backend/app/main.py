@@ -30,7 +30,7 @@ def seed():
         admin_profile = by_slug["administrador"]
 
         admin_email = settings.ADMIN_EMAIL.strip() or (
-            "admin@marcelo.com" if not settings.is_production else ""
+            "admin@qubrix.com" if not settings.is_production else ""
         )
         admin_password = settings.ADMIN_PASSWORD or (
             "Admin@1234" if not settings.is_production else ""

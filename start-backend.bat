@@ -12,7 +12,7 @@ if not exist ".venv\Scripts\activate.bat" (
 call .venv\Scripts\activate.bat
 
 echo.
-echo Sistema Marcelo - Backend
+echo QuBrix - Backend
 echo API:          http://localhost:8001
 echo Documentacao: http://localhost:8001/docs
 echo.

@@ -1,4 +1,4 @@
-export const BRAND_NAME = 'Sistema Marcelo';
+export const BRAND_NAME = 'QuBrix';
 export const BRAND_LOGO = 'assets/logo.svg';
 export const BRAND_TAGLINE = 'Cotações, pedidos e vendas com controle gerencial.';
 

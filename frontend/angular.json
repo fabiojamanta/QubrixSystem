@@ -2,7 +2,7 @@
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "version": 1,
   "projects": {
-    "sistema-marcelo-frontend": {
+    "qubrix-frontend": {
       "projectType": "application",
       "root": "",
       "sourceRoot": "src",
@@ -10,7 +10,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/sistema-marcelo-frontend",
+            "outputPath": "dist/qubrix-frontend",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": ["zone.js"],
@@ -41,8 +41,8 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
-            "production": { "buildTarget": "sistema-marcelo-frontend:build:production" },
-            "development": { "buildTarget": "sistema-marcelo-frontend:build:development" }
+            "production": { "buildTarget": "qubrix-frontend:build:production" },
+            "development": { "buildTarget": "qubrix-frontend:build:development" }
           },
           "defaultConfiguration": "development"
         }

@@ -10,7 +10,7 @@ if not exist "node_modules\" (
 )
 
 echo.
-echo Sistema Marcelo - Frontend
+echo QuBrix - Frontend
 echo API local:   http://localhost:8001  (rode start-backend.bat antes)
 echo Aplicacao:   http://localhost:4201
 echo.

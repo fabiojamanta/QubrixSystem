@@ -2,7 +2,7 @@
 setlocal
 cd /d "%~dp0"
 
-echo === Sistema Marcelo - Auditoria de dependencias ===
+echo === QuBrix - Auditoria de dependencias ===
 echo.
 
 echo [Backend] pip audit...
