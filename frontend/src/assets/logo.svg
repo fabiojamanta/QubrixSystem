@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 64" role="img" aria-label="Sistema Marcelo">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2f5f9e"/>
+      <stop offset="100%" stop-color="#264d82"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="8" width="48" height="48" rx="14" fill="url(#g)"/>
+  <text x="18" y="42" font-family="Plus Jakarta Sans, Arial, sans-serif" font-size="24" font-weight="700" fill="#fff">M</text>
+  <text x="64" y="28" font-family="Plus Jakarta Sans, Arial, sans-serif" font-size="18" font-weight="700" fill="#0f172a">Sistema</text>
+  <text x="64" y="48" font-family="Plus Jakarta Sans, Arial, sans-serif" font-size="18" font-weight="700" fill="#2f5f9e">Marcelo</text>
+</svg>

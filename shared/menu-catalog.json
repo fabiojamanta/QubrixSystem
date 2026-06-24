@@ -1,0 +1,12 @@
+[
+  { "menu_key": "dashboard", "label": "Dashboard", "route_paths": ["/"], "nav_group": null, "sort_order": 1 },
+  { "menu_key": "produtos", "label": "Produtos", "route_paths": ["/produtos"], "nav_group": "cadastros", "sort_order": 10 },
+  { "menu_key": "clientes", "label": "Clientes", "route_paths": ["/clientes"], "nav_group": "cadastros", "sort_order": 11 },
+  { "menu_key": "estoque", "label": "Estoque", "route_paths": ["/estoque"], "nav_group": "cadastros", "sort_order": 12 },
+  { "menu_key": "cotacoes", "label": "Cotações", "route_paths": ["/cotacoes"], "nav_group": "comercial", "sort_order": 20 },
+  { "menu_key": "pedidos", "label": "Pedidos", "route_paths": ["/pedidos"], "nav_group": "comercial", "sort_order": 21 },
+  { "menu_key": "vendas", "label": "Vendas", "route_paths": ["/vendas"], "nav_group": "comercial", "sort_order": 22 },
+  { "menu_key": "campanhas", "label": "Campanhas", "route_paths": ["/campanhas"], "nav_group": "configuracoes", "sort_order": 30 },
+  { "menu_key": "informacoes", "label": "Informações", "route_paths": ["/informacoes"], "nav_group": "configuracoes", "sort_order": 31 },
+  { "menu_key": "usuarios", "label": "Usuários", "route_paths": ["/usuarios"], "nav_group": "configuracoes", "sort_order": 32 }
+]
