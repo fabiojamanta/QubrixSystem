@@ -214,6 +214,10 @@ a {
   display: block;
 }
 
+.nav-brand-name {
+  display: none;
+}
+
 .nav-panel {
   display: flex;
   flex: 1;
@@ -2059,6 +2063,25 @@ html[data-theme='dark'] .top .page-title p {
   .nav-brand-logo {
     height: 36px;
     max-width: 96px;
+  }
+
+  .logo-link {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .nav-brand-name {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: clamp(0.95rem, 4vw, 1.1rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--text);
   }
 
   /* Drawer lateral */

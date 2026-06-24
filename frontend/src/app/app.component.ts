@@ -21,6 +21,7 @@ const HOVER_CLOSE_DELAY_MS = 250;
     <div class="app-header-bar">
       <a routerLink="/" class="logo-link" (click)="closeMenu()">
         <img class="nav-brand-logo" [src]="brandLogo" [alt]="brandName" />
+        <span class="nav-brand-name">{{ brandName }}</span>
       </a>
       <button type="button" class="nav-toggle" [class.is-open]="menuOpen" [attr.aria-expanded]="menuOpen" aria-controls="nav-panel" aria-label="Abrir ou fechar menu" (click)="toggleMenu()">
         <span></span><span></span><span></span>
