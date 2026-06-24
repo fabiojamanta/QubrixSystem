@@ -201,8 +201,8 @@ a {
 .nav-brand-logo {
   height: 44px;
   width: auto;
-  max-width: 160px;
-  border-radius: 12px;
+  max-width: 120px;
+  border-radius: 8px;
   object-fit: contain;
   flex-shrink: 0;
   display: block;
@@ -538,8 +538,9 @@ a {
 }
 
 .page-logo {
-  width: 72px;
-  height: 72px;
+  width: auto;
+  height: 64px;
+  max-width: 96px;
   object-fit: contain;
   flex-shrink: 0;
   border-radius: 12px;
@@ -969,61 +970,61 @@ th {
   display: grid;
   place-items: center;
   padding: 24px;
-  background-color: var(--login-bg);
-  background-image:
-    radial-gradient(ellipse 80% 55% at 15% 20%, rgba(47, 95, 158, 0.45), transparent 55%),
-    radial-gradient(ellipse 65% 50% at 85% 75%, rgba(38, 77, 130, 0.38), transparent 50%),
-    radial-gradient(ellipse 50% 40% at 50% 50%, rgba(255, 255, 255, 0.04), transparent 60%),
-    linear-gradient(160deg, #12161c 0%, #1a2330 45%, #0f1419 100%);
+  background-color: #f4f4f2;
+  background-image: url('assets/back.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   background-attachment: fixed;
 }
 
 .login-card {
   width: min(430px, 92vw);
-  background: rgba(255, 255, 255, 0.12);
+  margin-top: min(42vh, 360px);
+  background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(var(--glass-blur-strong));
   -webkit-backdrop-filter: blur(var(--glass-blur-strong));
   border-radius: 24px;
   padding: 32px;
   box-shadow: var(--glass-shadow-lg), var(--glass-inset);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.65);
 }
 
 .login-card h1,
 .login-card p,
 .login-card label {
-  color: #f0f3f7;
+  color: #1e293b;
 }
 
 .login-card label {
-  color: rgba(255, 255, 255, 0.85);
+  color: #334155;
 }
 
 .login-card input {
-  background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(255, 255, 255, 0.22);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(15, 23, 42, 0.12);
+  color: #0f172a;
 }
 
 .login-card input::placeholder {
-  color: rgba(255, 255, 255, 0.45);
+  color: rgba(15, 23, 42, 0.4);
 }
 
 .login-card input:focus {
-  border-color: rgba(255, 255, 255, 0.45);
+  border-color: rgba(31, 107, 107, 0.45);
   box-shadow:
     var(--glass-inset),
-    0 0 0 3px rgba(47, 95, 158, 0.35);
+    0 0 0 3px rgba(31, 107, 107, 0.18);
 }
 
 .login-card .empty {
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(15, 23, 42, 0.55);
 }
 
 .login-card .error {
-  background: rgba(180, 35, 24, 0.25);
-  border-color: rgba(255, 255, 255, 0.15);
-  color: #ffd4d0;
+  background: rgba(180, 35, 24, 0.1);
+  border-color: rgba(180, 35, 24, 0.18);
+  color: #991b1b;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
@@ -1033,13 +1034,32 @@ th {
   margin: 0 0 16px;
 }
 
+@media (max-width: 768px) {
+  .login-page {
+    align-items: end;
+    padding: 16px 16px 28px;
+  }
+
+  .login-card {
+    margin-top: 0;
+    width: min(100%, 430px);
+  }
+}
+
+@media (min-width: 769px) {
+  .login-page {
+    align-items: start;
+    padding-top: 48px;
+  }
+}
+
 .login-logo {
   display: block;
-  width: min(100%, 300px);
+  width: min(100%, 280px);
   height: auto;
   margin: 0 auto;
-  border-radius: 16px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+  border-radius: 12px;
+  object-fit: contain;
 }
 
 .login-tagline {
@@ -1954,7 +1974,7 @@ tr.selected {
 
   .nav-brand-logo {
     height: 36px;
-    max-width: 130px;
+    max-width: 96px;
   }
 
   /* Drawer lateral */
