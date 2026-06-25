@@ -5,10 +5,12 @@ from app.bootstrap import bootstrap_database
 from app.database import SessionLocal
 from app.demo_seed import seed_demo_data, _has_demo_data
 from app.models import Company
+from app.schema_init import ensure_schema
 
 
 def main():
     force = "--force" in sys.argv
+    ensure_schema()
     db = SessionLocal()
     try:
         if not db.query(Company).filter(Company.id == 1).first():

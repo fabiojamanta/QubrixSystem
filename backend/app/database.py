@@ -20,6 +20,9 @@ Base = declarative_base()
 
 
 def get_db():
+    from .schema_init import ensure_schema
+
+    ensure_schema()
     db = SessionLocal()
     try:
         yield db

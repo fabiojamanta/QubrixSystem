@@ -1,61 +1,26 @@
-import asyncio
 import logging
-from contextlib import asynccontextmanager
+import os
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
-from .database import Base, engine
 from .config import settings
 from .routers import auth, dashboard, products, clients, stock, quotes, orders, sales, campaigns, info_board, users
-from .schema_migrate import apply_schema_patches
 from .middleware import SecurityHeadersMiddleware, CsrfMiddleware
 from .rate_limit import limiter
 
 logger = logging.getLogger(__name__)
-
-_startup_ready = asyncio.Event()
-_startup_error: Exception | None = None
-
-
-def init_database() -> None:
-    Base.metadata.create_all(bind=engine)
-    apply_schema_patches()
-
-
-async def _run_startup() -> None:
-    global _startup_error
-    try:
-        await asyncio.to_thread(init_database)
-        logger.info("Banco inicializado com sucesso")
-    except Exception as exc:
-        _startup_error = exc
-        logger.exception("Falha ao inicializar o banco: %s", exc)
-    finally:
-        _startup_ready.set()
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    startup_task = asyncio.create_task(_run_startup())
-    yield
-    startup_task.cancel()
-    try:
-        await startup_task
-    except asyncio.CancelledError:
-        pass
-
+logging.basicConfig(level=logging.INFO)
 
 _docs_kwargs = (
     {"docs_url": None, "redoc_url": None, "openapi_url": None}
     if settings.is_production
     else {}
 )
-app = FastAPI(title=settings.APP_NAME, version="1.0.0", lifespan=lifespan, **_docs_kwargs)
+app = FastAPI(title=settings.APP_NAME, version="1.0.0", **_docs_kwargs)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
@@ -82,15 +47,9 @@ app.include_router(campaigns.router)
 app.include_router(info_board.router)
 app.include_router(users.router)
 
+logger.info("QuBrix API carregada (porta %s, schema sob demanda)", os.environ.get("PORT", "?"))
+
 
 @app.get("/")
-@limiter.limit("60/minute")
-def health(request: Request):
-    if _startup_error is not None:
-        return JSONResponse(
-            status_code=503,
-            content={"status": "error", "app": settings.APP_NAME, "detail": str(_startup_error)},
-        )
-    if not _startup_ready.is_set():
-        return {"status": "starting", "app": settings.APP_NAME}
+def health():
     return {"status": "online", "app": settings.APP_NAME}

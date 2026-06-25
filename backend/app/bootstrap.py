@@ -9,6 +9,9 @@ from .profile_seed import seed_profiles, sync_menu_catalog
 from .security import get_password_hash, validate_password_strength
 
 
+from .schema_init import ensure_schema
+
+
 def bootstrap_database(db: Session) -> None:
     company = db.query(Company).filter(Company.id == 1).first()
     if not company:
@@ -45,6 +48,7 @@ def bootstrap_database(db: Session) -> None:
 
 
 def run_initial_load(*, demo: bool = False, force_demo: bool = False) -> None:
+    ensure_schema()
     db = SessionLocal()
     try:
         bootstrap_database(db)
