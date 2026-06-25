@@ -11,13 +11,9 @@ if not exist ".venv\Scripts\activate.bat" (
 call .venv\Scripts\activate.bat
 
 rem ============================================================
-rem   seed-demo.bat           -> banco local (SQLite)
-rem   seed-demo.bat render    -> banco publicado no Render
-rem   seed-demo.bat --force   -> repopula (apaga dados operacionais)
-rem
-rem   Apenas dados de exemplo. Se o sistema ainda nao foi
-rem   inicializado, a carga base (empresa/perfis/admin) roda antes.
-rem   Para so a carga base: seed-system.bat
+rem   seed-system.bat           -> banco local (SQLite)
+rem   seed-system.bat render    -> banco publicado no Render
+rem   seed-system.bat --demo    -> inclui produtos/clientes/vendas de exemplo
 rem ============================================================
 
 set "DB_MODE=%~1"
@@ -36,10 +32,10 @@ if /i "%DB_MODE%"=="render" (
     exit /b 1
   )
   echo.
-  echo *** Populando banco PUBLICADO no Render ***
+  echo *** Carga inicial no banco PUBLICADO no Render ***
   echo.
   shift
 )
 
-python seed_demo.py %*
+python seed_system.py %*
 pause

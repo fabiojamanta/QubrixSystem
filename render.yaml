@@ -5,7 +5,10 @@
 # Após o deploy, defina manualmente no serviço qubrix-api:
 #   ADMIN_EMAIL  (ex.: admin@qubrix.com)
 #   ADMIN_PASSWORD  (senha forte; obrigatório em produção)
-#   SEED_DEMO_DATA  = true  (uma vez, para popular produtos/clientes/vendas de exemplo)
+#
+# Carga inicial (empresa, perfis, admin, menu) — manual, após o deploy:
+#   seed-system.bat render
+# Com dados de exemplo: seed-system.bat render --demo
 
 databases:
   - name: qubrix-db
@@ -42,8 +45,6 @@ services:
       - key: ADMIN_EMAIL
         sync: false
       - key: ADMIN_PASSWORD
-        sync: false
-      - key: SEED_DEMO_DATA
         sync: false
       - key: PYTHON_VERSION
         value: "3.12.7"

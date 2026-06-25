@@ -1,14 +1,21 @@
 """Script para popular ou repopular dados de demonstração."""
 import sys
 
+from app.bootstrap import bootstrap_database
 from app.database import SessionLocal
 from app.demo_seed import seed_demo_data, _has_demo_data
+from app.models import Company
 
 
 def main():
     force = "--force" in sys.argv
     db = SessionLocal()
     try:
+        if not db.query(Company).filter(Company.id == 1).first():
+            print("Empresa não encontrada — executando carga inicial do sistema...")
+            bootstrap_database(db)
+            db.flush()
+
         if _has_demo_data(db) and not force:
             print("Dados de exemplo já existem. Use --force para repopular.")
             return 0

@@ -9,14 +9,10 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
-from .database import Base, engine, SessionLocal
-from .models import Company, User
+from .database import Base, engine
 from .config import settings
-from .security import get_password_hash, validate_password_strength
 from .routers import auth, dashboard, products, clients, stock, quotes, orders, sales, campaigns, info_board, users
-from .profile_seed import seed_profiles, sync_menu_catalog
 from .schema_migrate import apply_schema_patches
-from .demo_seed import seed_demo_data
 from .middleware import SecurityHeadersMiddleware, CsrfMiddleware
 from .rate_limit import limiter
 
@@ -26,55 +22,9 @@ _startup_ready = asyncio.Event()
 _startup_error: Exception | None = None
 
 
-def seed():
-    db = SessionLocal()
-    try:
-        company = db.query(Company).filter(Company.id == 1).first()
-        if not company:
-            company = Company(id=1, name="Empresa Principal", active=True)
-            db.add(company)
-            db.flush()
-
-        by_slug = seed_profiles(db)
-        admin_profile = by_slug["administrador"]
-
-        admin_email = settings.ADMIN_EMAIL.strip() or (
-            "admin@qubrix.com" if not settings.is_production else ""
-        )
-        admin_password = settings.ADMIN_PASSWORD or (
-            "Admin@1234" if not settings.is_production else ""
-        )
-        if admin_email and admin_password:
-            try:
-                validate_password_strength(admin_password)
-            except Exception as exc:
-                detail = getattr(exc, "detail", str(exc))
-                raise ValueError(f"ADMIN_PASSWORD inválida: {detail}") from exc
-            existing = db.query(User).filter(User.company_id == company.id, User.email == admin_email).first()
-            if not existing:
-                db.add(User(
-                    company_id=company.id,
-                    profile_id=admin_profile.id,
-                    name="Administrador",
-                    email=admin_email,
-                    password_hash=get_password_hash(admin_password),
-                    active=True,
-                ))
-        sync_menu_catalog(db)
-        if settings.SEED_DEMO_DATA:
-            seed_demo_data(db)
-        db.commit()
-    except Exception:
-        db.rollback()
-        raise
-    finally:
-        db.close()
-
-
 def init_database() -> None:
     Base.metadata.create_all(bind=engine)
     apply_schema_patches()
-    seed()
 
 
 async def _run_startup() -> None:

@@ -21,7 +21,6 @@ class Settings(BaseSettings):
     LOGIN_MAX_ATTEMPTS: int = 5
     LOGIN_LOCKOUT_MINUTES: int = 15
     RATE_LIMIT_DEFAULT: str = "120/minute"
-    SEED_DEMO_DATA: bool = True
 
     def login_lockout_timedelta(self) -> timedelta:
         return timedelta(minutes=self.LOGIN_LOCKOUT_MINUTES)
@@ -49,14 +48,11 @@ class Settings(BaseSettings):
     def validate_production_secrets(self):
         if self.is_production and self.SECRET_KEY == INSECURE_SECRET_PLACEHOLDER:
             raise ValueError("SECRET_KEY deve ser definida em produção (ENV=production)")
-        if self.is_production:
-            explicit = os.environ.get("SEED_DEMO_DATA", "").strip().lower()
-            if explicit not in ("true", "1", "yes"):
-                self.SEED_DEMO_DATA = False
         return self
 
     class Config:
         env_file = ".env"
+        extra = "ignore"
 
 
 settings = Settings()
