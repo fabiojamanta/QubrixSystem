@@ -7,8 +7,10 @@
 #   ADMIN_PASSWORD  (senha forte; obrigatório em produção)
 #
 # Carga inicial (empresa, perfis, admin, menu) — manual, após o deploy:
-#   seed-system.bat render
-# Com dados de exemplo: seed-system.bat render --demo
+#   Local Windows:  seed-system.bat
+#   Local/Render shell:  cd backend && python seed_system.py
+#   Render (raiz repo):  bash seed-system.sh
+# Com dados de exemplo:  ... --demo
 
 databases:
   - name: qubrix-db

@@ -3,12 +3,14 @@ import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
 from .config import settings
 from .routers import auth, dashboard, products, clients, stock, quotes, orders, sales, campaigns, info_board, users
+from .schema_init import schema_status
 from .middleware import SecurityHeadersMiddleware, CsrfMiddleware
 from .rate_limit import limiter
 
@@ -52,4 +54,9 @@ logger.info("QuBrix API carregada (porta %s, schema sob demanda)", os.environ.ge
 
 @app.get("/")
 def health():
-    return {"status": "online", "app": settings.APP_NAME}
+    return {"status": "online", "app": settings.APP_NAME, **schema_status()}
+
+
+@app.head("/")
+def health_head():
+    return Response(status_code=200)
