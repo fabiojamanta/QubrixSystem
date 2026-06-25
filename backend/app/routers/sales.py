@@ -44,6 +44,53 @@ def _serialize_sale(s: Sale, include_items=False) -> dict:
     return data
 
 
+def _apply_list_filters(
+    query,
+    *,
+    user: User,
+    db: Session,
+    user_id: int | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    months: int | None = None,
+):
+    seller_name = "Todos"
+    if not user_is_management(user):
+        query = query.filter(Sale.user_id == user.id)
+        seller_name = user.name
+    elif user_id:
+        seller = db.query(User).filter(User.id == user_id, User.company_id == user.company_id, User.active == True).first()
+        if not seller:
+            raise HTTPException(400, "Vendedor inválido")
+        query = query.filter(Sale.user_id == user_id)
+        seller_name = seller.name
+
+    if date_from:
+        query = query.filter(Sale.sale_date >= date_from)
+    if date_to:
+        query = query.filter(Sale.sale_date <= date_to)
+    elif not date_from and months and months < 36:
+        from ..datetime_utils import today_br
+        from datetime import timedelta
+
+        start = today_br().replace(day=1)
+        for _ in range(months - 1):
+            start = (start - timedelta(days=1)).replace(day=1)
+        query = query.filter(Sale.sale_date >= start)
+
+    return query, seller_name
+
+
+def _format_period_label(date_from: str | None, date_to: str | None) -> str:
+    if date_from and date_to:
+        return f"{date_from} — {date_to}"
+    if date_from:
+        return f"A partir de {date_from}"
+    if date_to:
+        return f"Até {date_to}"
+    return "Todo o período"
+
+
 @router.get("")
 def list_sales(
     months: int | None = None,
@@ -59,32 +106,28 @@ def list_sales(
         .options(joinedload(Sale.client), joinedload(Sale.user))
         .filter(Sale.company_id == user.company_id)
     )
-    if not user_is_management(user):
-        query = query.filter(Sale.user_id == user.id)
-    elif user_id:
-        seller = db.query(User).filter(User.id == user_id, User.company_id == user.company_id, User.active == True).first()
-        if not seller:
-            raise HTTPException(400, "Vendedor inválido")
-        query = query.filter(Sale.user_id == user_id)
-
-    if date_from:
-        query = query.filter(Sale.sale_date >= date_from)
-    if date_to:
-        query = query.filter(Sale.sale_date <= date_to)
-    elif not date_from and months and months < 36:
-        from ..datetime_utils import today_br
-        from datetime import timedelta
-        start = today_br().replace(day=1)
-        for _ in range(months - 1):
-            start = (start - timedelta(days=1)).replace(day=1)
-        query = query.filter(Sale.sale_date >= start)
-
+    query, _ = _apply_list_filters(
+        query,
+        user=user,
+        db=db,
+        user_id=user_id,
+        date_from=date_from,
+        date_to=date_to,
+        months=months,
+    )
     rows = query.order_by(Sale.sale_date.desc()).all()
     return [_serialize_sale(s) for s in rows]
 
 
 @router.get("/summary")
-def sales_summary(months: int = 36, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def sales_summary(
+    months: int = 36,
+    user_id: int | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
     assert_menu_access(db, user, "vendas", AccessLevel.read)
     from ..datetime_utils import today_br
     from datetime import timedelta
@@ -115,10 +158,25 @@ def sales_summary(months: int = 36, db: Session = Depends(get_db), user: User = 
         ref = (ref - timedelta(days=1)).replace(day=1)
 
     buckets.reverse()
+
+    filtered_query = db.query(Sale).filter(Sale.company_id == user.company_id)
+    filtered_query, seller_name = _apply_list_filters(
+        filtered_query,
+        user=user,
+        db=db,
+        user_id=user_id,
+        date_from=date_from,
+        date_to=date_to,
+    )
+    filtered_total = sum(Decimal(str(s.total_amount or 0)) for s in filtered_query.all())
+
     return {
         "month_total": float(month_total),
         "last_year_same_period": float(ly_total),
         "monthly": buckets,
+        "filtered_total": float(filtered_total),
+        "filtered_seller_name": seller_name,
+        "filtered_period_label": _format_period_label(date_from, date_to),
     }
 
 

@@ -20,6 +20,10 @@ type ClientContactForm = { name: string; phone: string; email: string };
 </app-page-header>
 @if(error && !modalOpen){<div class="error">{{error}}</div>}
 
+<div class="grid grid-2 card filters">
+  <div><label>Buscar</label><input [(ngModel)]="filterQ" (ngModelChange)="load()" placeholder="Nome, documento ou nº cadastro"></div>
+</div>
+
 <app-form-modal [open]="modalOpen" [title]="editingId ? 'Editar cliente' : 'Novo cliente'" (close)="closeModal()">
   <div class="grid grid-3">
     @if(editingId){
@@ -81,6 +85,7 @@ export class ClientsComponent implements OnInit {
   editingId: number | null = null;
   error = '';
   form = this.emptyForm();
+  filterQ = '';
   constructor(public auth: AuthService, private api: ApiService) {}
   ngOnInit() {
     this.load();
@@ -113,7 +118,7 @@ export class ClientsComponent implements OnInit {
     ];
   }
   load() {
-    this.api.get<any[]>('/clients').subscribe({
+    this.api.get<any[]>('/clients', { q: this.filterQ.trim() || null }).subscribe({
       next: (r) => (this.rows = r),
       error: (e) => (this.error = formatApiError(e.error?.detail)),
     });

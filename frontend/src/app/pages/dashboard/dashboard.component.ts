@@ -14,11 +14,14 @@ import { PAGE_LOGOS } from '../../shared/page-logos';
 @if(!data){<p class="empty">Carregando...</p>}
 @if(data){
   <section class="card dash-panel">
-    <h3 class="dash-section-title">Campanhas ativas</h3>
+    <h3 class="dash-section-title">Campanhas</h3>
     @for (c of data.campaigns; track c.id) {
-      <div class="dash-item dash-item-ok">
+      <div class="dash-item" [class.dash-item-ok]="!c.is_early_notice" [class.dash-item-warn]="c.is_early_notice">
         <div class="dash-product-name">{{ c.title }}</div>
         <div class="dash-details">
+          @if(c.is_early_notice){
+            <div class="dash-detail-line">Aviso: campanha inicia em {{ c.starts_in_days }} dia(s)</div>
+          }
           <div class="dash-detail-line">{{ c.description }}</div>
           <div class="dash-detail-line">Preços especiais: {{ c.special_price_info || '—' }}</div>
           <div class="dash-detail-line">Vigência: {{ c.start_date | dateBr }} — {{ c.end_date | dateBr }}</div>
@@ -49,6 +52,9 @@ import { PAGE_LOGOS } from '../../shared/page-logos';
           <div class="dash-product-name">{{ i.title }}</div>
           <div class="dash-details">
             <div class="dash-detail-line">{{ i.content }}</div>
+            @if(i.start_date || i.end_date){
+              <div class="dash-detail-line">Vigência: {{ i.start_date | dateBr }} — {{ i.end_date | dateBr }}</div>
+            }
           </div>
         </div>
       } @empty { <p class="empty">Nenhuma informação publicada.</p> }

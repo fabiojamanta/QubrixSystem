@@ -18,14 +18,26 @@ def _serialize(c: Campaign) -> dict:
         "special_price_info": c.special_price_info,
         "start_date": c.start_date.isoformat(),
         "end_date": c.end_date.isoformat(),
+        "show_early_notice": c.show_early_notice,
+        "early_notice_days": c.early_notice_days,
         "active": c.active,
     }
 
 
 @router.get("")
-def list_campaigns(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def list_campaigns(
+    date_from: str | None = None,
+    date_to: str | None = None,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
     assert_menu_access(db, user, "campanhas", AccessLevel.read)
-    rows = db.query(Campaign).filter(Campaign.company_id == user.company_id).order_by(Campaign.start_date.desc()).all()
+    query = db.query(Campaign).filter(Campaign.company_id == user.company_id)
+    if date_from:
+        query = query.filter(Campaign.end_date >= date_from)
+    if date_to:
+        query = query.filter(Campaign.start_date <= date_to)
+    rows = query.order_by(Campaign.start_date.desc()).all()
     return [_serialize(c) for c in rows]
 
 

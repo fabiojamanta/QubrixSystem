@@ -3,8 +3,10 @@ from sqlalchemy.orm import Session, joinedload
 
 from ..database import get_db
 from ..deps import get_current_user, log_action
+from ..datetime_utils import now_br
 from ..models import AccessLevel, Profile, User
 from ..permissions import assert_menu_access, user_is_management, profile_to_dict
+from ..input_sanitize import sanitize_search_term
 from ..schemas import UserCreate, UserUpdate
 from ..security import get_password_hash, validate_password_strength
 
@@ -17,6 +19,8 @@ def _serialize(u: User) -> dict:
         "name": u.name,
         "email": u.email,
         "active": u.active,
+        "created_at": u.created_at.isoformat() if u.created_at else None,
+        "updated_at": u.updated_at.isoformat() if u.updated_at else None,
         "profile": profile_to_dict(u.profile) if u.profile else None,
     }
 
@@ -29,15 +33,28 @@ def list_profiles(db: Session = Depends(get_db), user: User = Depends(get_curren
 
 
 @router.get("")
-def list_users(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def list_users(
+    q: str | None = None,
+    profile_id: int | None = None,
+    active: bool | None = None,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
     assert_menu_access(db, user, "usuarios", AccessLevel.read)
-    rows = (
+    query = (
         db.query(User)
         .options(joinedload(User.profile))
         .filter(User.company_id == user.company_id)
-        .order_by(User.name)
-        .all()
     )
+    q = sanitize_search_term(q)
+    if q:
+        like = f"%{q}%"
+        query = query.filter((User.name.ilike(like)) | (User.email.ilike(like)))
+    if profile_id:
+        query = query.filter(User.profile_id == profile_id)
+    if active is not None:
+        query = query.filter(User.active == active)
+    rows = query.order_by(User.name).all()
     return [_serialize(u) for u in rows]
 
 
@@ -52,6 +69,7 @@ def create_user(payload: UserCreate, request: Request, db: Session = Depends(get
     if not profile:
         raise HTTPException(400, "Perfil inválido")
     validate_password_strength(payload.password)
+    now = now_br()
     u = User(
         company_id=user.company_id,
         name=payload.name,
@@ -59,6 +77,8 @@ def create_user(payload: UserCreate, request: Request, db: Session = Depends(get
         password_hash=get_password_hash(payload.password),
         profile_id=payload.profile_id,
         active=payload.active,
+        created_at=now,
+        updated_at=now,
     )
     db.add(u)
     db.flush()
@@ -99,6 +119,7 @@ def update_user(
             if not profile:
                 raise HTTPException(400, "Perfil inválido")
         setattr(u, k, v)
+    u.updated_at = now_br()
     log_action(db, user, "update", "users", u.id, request=request)
     db.commit()
     return _serialize(u)

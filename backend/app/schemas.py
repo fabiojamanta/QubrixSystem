@@ -2,7 +2,7 @@ from datetime import date
 from decimal import Decimal
 from typing import Literal, Optional
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
 
 class Login(BaseModel):
@@ -78,7 +78,6 @@ class ClientUpdate(ClientBase):
 class StockLotBase(BaseModel):
     product_id: int = Field(gt=0)
     lot_number: str = Field(min_length=1, max_length=60)
-    manufacturer: Optional[str] = Field(default=None, max_length=120)
     quantity: Decimal = Field(ge=0)
     expiry_date: Optional[date] = None
     active: bool = True
@@ -98,7 +97,19 @@ class CampaignBase(BaseModel):
     special_price_info: Optional[str] = Field(default=None, max_length=500)
     start_date: date
     end_date: date
+    show_early_notice: bool = False
+    early_notice_days: Optional[int] = Field(default=None, ge=1, le=365)
     active: bool = True
+
+    @model_validator(mode="after")
+    def validate_early_notice(self):
+        if self.show_early_notice and not self.early_notice_days:
+            raise ValueError("Informe os dias antes para aviso de início da campanha")
+        if not self.show_early_notice:
+            self.early_notice_days = None
+        if self.end_date < self.start_date:
+            raise ValueError("Data final deve ser igual ou posterior à data inicial")
+        return self
 
 
 class CampaignCreate(CampaignBase):
@@ -112,7 +123,15 @@ class CampaignUpdate(CampaignBase):
 class InfoBoardItemBase(BaseModel):
     title: str = Field(min_length=1, max_length=180)
     content: str = Field(min_length=1, max_length=5000)
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
     active: bool = True
+
+    @model_validator(mode="after")
+    def validate_dates(self):
+        if self.start_date and self.end_date and self.end_date < self.start_date:
+            raise ValueError("Data final deve ser igual ou posterior à data inicial")
+        return self
 
 
 class InfoBoardItemCreate(InfoBoardItemBase):
@@ -142,6 +161,7 @@ class QuoteCreate(BaseModel):
 class QuoteStatusUpdate(BaseModel):
     status: Literal["aberta", "ganha", "perdida"]
     lost_reason: Optional[Literal["preco", "prazo_entrega", "prazo_pagamento", "outra_marca", "ma_fe", "outro"]] = None
+    lost_reason_detail: Optional[str] = Field(default=None, max_length=500)
 
 
 class QuoteApprove(BaseModel):

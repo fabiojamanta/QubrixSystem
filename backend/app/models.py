@@ -108,6 +108,7 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     active = Column(Boolean, default=True)
     created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
     profile = relationship("Profile", back_populates="users")
 
 
@@ -234,6 +235,8 @@ class Campaign(Base):
     special_price_info = Column(Text)
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
+    show_early_notice = Column(Boolean, default=False, nullable=False)
+    early_notice_days = Column(Integer, nullable=True)
     active = Column(Boolean, default=True)
     created_at = Column(DateTime, server_default=func.now())
 
@@ -244,6 +247,8 @@ class InfoBoardItem(Base):
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=False, default=1)
     title = Column(String(180), nullable=False)
     content = Column(Text, nullable=False)
+    start_date = Column(Date, nullable=True)
+    end_date = Column(Date, nullable=True)
     active = Column(Boolean, default=True)
     created_at = Column(DateTime, server_default=func.now())
 
@@ -256,6 +261,7 @@ class Quote(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     status = Column(Enum(QuoteStatus), default=QuoteStatus.aberta, nullable=False)
     lost_reason = Column(Enum(LostReason), nullable=True)
+    lost_reason_detail = Column(Text, nullable=True)
     response_deadline = Column(Date)
     notes = Column(Text)
     based_on_quote_id = Column(Integer, ForeignKey("quotes.id"), nullable=True)

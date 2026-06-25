@@ -178,12 +178,14 @@ def seed_demo_data(db: Session, company_id: int = 1, force: bool = False) -> boo
             description="Descontos especiais em materiais hospitalares para a temporada.",
             special_price_info="Luvas e máscaras com 15% de desconto na tabela geral.",
             start_date=today - timedelta(days=10), end_date=today + timedelta(days=50), active=True,
+            show_early_notice=True, early_notice_days=7,
         ),
         Campaign(
             company_id=company_id, title="Semana do Cliente",
             description="Condições especiais de pagamento para pedidos acima de R$ 5.000.",
             special_price_info="Parcelamento em até 3x sem juros.",
-            start_date=today - timedelta(days=5), end_date=today + timedelta(days=25), active=True,
+            start_date=today + timedelta(days=5), end_date=today + timedelta(days=25), active=True,
+            show_early_notice=True, early_notice_days=10,
         ),
     ])
 
@@ -191,16 +193,17 @@ def seed_demo_data(db: Session, company_id: int = 1, force: bool = False) -> boo
         InfoBoardItem(
             company_id=company_id, title="Novo horário de expediente",
             content="A partir de julho, atendimento comercial das 8h às 18h.",
-            active=True,
+            start_date=today - timedelta(days=30), end_date=today + timedelta(days=60), active=True,
         ),
         InfoBoardItem(
             company_id=company_id, title="Prazo de entrega",
             content="Pedidos confirmados até 14h serão despachados no mesmo dia (região capital).",
-            active=True,
+            start_date=today - timedelta(days=7), end_date=today + timedelta(days=30), active=True,
         ),
         InfoBoardItem(
             company_id=company_id, title="Meta do mês",
             content="Meta coletiva: R$ 85.000 em vendas faturadas. Vamos juntos!",
+            start_date=today.replace(day=1), end_date=(today.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1),
             active=True,
         ),
     ])

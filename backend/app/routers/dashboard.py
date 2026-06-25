@@ -2,20 +2,61 @@ from datetime import timedelta
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import func
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
-from ..business_rules import profitability_for_price
 from ..database import get_db
-from ..datetime_utils import now_br, today_br
+from ..datetime_utils import today_br
 from ..deps import get_current_user
 from ..models import (
-    Campaign, InfoBoardItem, Product, Quote, QuoteItem, QuoteStatus, Sale, StockLot, User, LostReason
+    AccessLevel,
+    Campaign,
+    InfoBoardItem,
+    Product,
+    Quote,
+    QuoteStatus,
+    Sale,
+    StockLot,
+    User,
+    LostReason,
 )
 from ..permissions import require_menu_access, user_is_management
-from ..models import AccessLevel
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
+
+
+def _campaigns_for_dashboard(db: Session, company_id: int, today) -> list[dict]:
+    rows = (
+        db.query(Campaign)
+        .filter(Campaign.company_id == company_id, Campaign.active == True)
+        .order_by(Campaign.start_date)
+        .all()
+    )
+    items = []
+    for campaign in rows:
+        is_active = campaign.start_date <= today <= campaign.end_date
+        is_early_notice = False
+        starts_in_days = None
+        if not is_active and campaign.show_early_notice and campaign.early_notice_days and campaign.start_date > today:
+            notice_start = campaign.start_date - timedelta(days=campaign.early_notice_days)
+            if notice_start <= today < campaign.start_date:
+                is_early_notice = True
+                starts_in_days = (campaign.start_date - today).days
+        if not is_active and not is_early_notice:
+            continue
+        items.append(
+            {
+                "id": campaign.id,
+                "title": campaign.title,
+                "description": campaign.description,
+                "special_price_info": campaign.special_price_info,
+                "start_date": campaign.start_date.isoformat(),
+                "end_date": campaign.end_date.isoformat(),
+                "is_early_notice": is_early_notice,
+                "starts_in_days": starts_in_days,
+            }
+        )
+    return items
 
 
 @router.get("")
@@ -26,21 +67,16 @@ def dashboard_summary(
     today = today_br()
     company_id = user.company_id
 
-    campaigns = (
-        db.query(Campaign)
-        .filter(
-            Campaign.company_id == company_id,
-            Campaign.active == True,
-            Campaign.start_date <= today,
-            Campaign.end_date >= today,
-        )
-        .order_by(Campaign.end_date)
-        .all()
-    )
+    campaigns = _campaigns_for_dashboard(db, company_id, today)
 
     info_items = (
         db.query(InfoBoardItem)
-        .filter(InfoBoardItem.company_id == company_id, InfoBoardItem.active == True)
+        .filter(
+            InfoBoardItem.company_id == company_id,
+            InfoBoardItem.active == True,
+            or_(InfoBoardItem.start_date.is_(None), InfoBoardItem.start_date <= today),
+            or_(InfoBoardItem.end_date.is_(None), InfoBoardItem.end_date >= today),
+        )
         .order_by(InfoBoardItem.created_at.desc())
         .limit(10)
         .all()
@@ -105,18 +141,17 @@ def dashboard_summary(
             expiry_buckets[180] += 1
 
     return {
-        "campaigns": [
+        "campaigns": campaigns,
+        "info_board": [
             {
-                "id": c.id,
-                "title": c.title,
-                "description": c.description,
-                "special_price_info": c.special_price_info,
-                "start_date": c.start_date.isoformat(),
-                "end_date": c.end_date.isoformat(),
+                "id": i.id,
+                "title": i.title,
+                "content": i.content,
+                "start_date": i.start_date.isoformat() if i.start_date else None,
+                "end_date": i.end_date.isoformat() if i.end_date else None,
             }
-            for c in campaigns
+            for i in info_items
         ],
-        "info_board": [{"id": i.id, "title": i.title, "content": i.content} for i in info_items],
         "quotes_summary": {
             "generated_30_days": quotes_30,
             "open_without_finish": open_quotes,

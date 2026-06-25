@@ -11,7 +11,14 @@ router = APIRouter(prefix="/info-board", tags=["info-board"])
 
 
 def _serialize(i: InfoBoardItem) -> dict:
-    return {"id": i.id, "title": i.title, "content": i.content, "active": i.active}
+    return {
+        "id": i.id,
+        "title": i.title,
+        "content": i.content,
+        "start_date": i.start_date.isoformat() if i.start_date else None,
+        "end_date": i.end_date.isoformat() if i.end_date else None,
+        "active": i.active,
+    }
 
 
 @router.get("")

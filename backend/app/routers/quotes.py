@@ -59,6 +59,7 @@ def _serialize_quote(q: Quote, db: Session, include_items=False) -> dict:
         "user_name": q.user.name if q.user else "",
         "status": q.status.value,
         "lost_reason": q.lost_reason.value if q.lost_reason else None,
+        "lost_reason_detail": q.lost_reason_detail,
         "response_deadline": q.response_deadline.isoformat() if q.response_deadline else None,
         "notes": q.notes,
         "based_on_quote_id": q.based_on_quote_id,
@@ -87,6 +88,9 @@ def list_quotes(
     status: str | None = None,
     date_from: str | None = None,
     date_to: str | None = None,
+    client_id: int | None = None,
+    user_id: int | None = None,
+    approval: str | None = None,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -98,14 +102,61 @@ def list_quotes(
     )
     if not user_is_management(user):
         query = query.filter(Quote.user_id == user.id)
+    elif user_id:
+        seller = db.query(User).filter(User.id == user_id, User.company_id == user.company_id, User.active == True).first()
+        if not seller:
+            raise HTTPException(400, "Vendedor inválido")
+        query = query.filter(Quote.user_id == user_id)
     if status:
         query = query.filter(Quote.status == QuoteStatus(status))
+    if client_id:
+        get_client_in_company(db, user, client_id)
+        query = query.filter(Quote.client_id == client_id)
     if date_from:
         query = query.filter(Quote.created_at >= date_from)
     if date_to:
         query = query.filter(Quote.created_at <= f"{date_to} 23:59:59")
+    if approval == "pendente":
+        query = query.filter(Quote.requires_management_approval == True, Quote.management_approved == False)
+    elif approval == "autorizada":
+        query = query.filter(Quote.requires_management_approval == True, Quote.management_approved == True)
+    elif approval == "nao_aplicavel":
+        query = query.filter(Quote.requires_management_approval == False)
     rows = query.order_by(Quote.created_at.desc()).all()
     return [_serialize_quote(q, db) for q in rows]
+
+
+@router.get("/products")
+def search_products_for_quote(
+    q: str | None = None,
+    client_id: int | None = None,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    assert_menu_access(db, user, "cotacoes", AccessLevel.read)
+    from ..input_sanitize import sanitize_search_term
+
+    query = db.query(Product).filter(Product.company_id == user.company_id, Product.active == True)
+    q = sanitize_search_term(q)
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            (Product.code.ilike(like)) | (Product.short_description.ilike(like)) | (Product.brand.ilike(like))
+        )
+    prices = _client_prices_map(db)
+    rows = query.order_by(Product.code).limit(50).all()
+    return [
+        {
+            "id": p.id,
+            "code": p.code,
+            "short_description": p.short_description,
+            "brand": p.brand,
+            "sale_unit": p.sale_unit.value if p.sale_unit else "UNIT",
+            "general_price": float(p.general_price or 0),
+            "suggested_price": float(resolve_unit_price(p, client_id, prices)),
+        }
+        for p in rows
+    ]
 
 
 @router.get("/next-number")
@@ -204,10 +255,17 @@ def update_status(
     if payload.status == QuoteStatus.perdida.value:
         if not payload.lost_reason:
             raise HTTPException(400, "Informe o motivo da perda")
+        if payload.lost_reason == LostReason.outro.value and not (payload.lost_reason_detail or "").strip():
+            raise HTTPException(400, "Descreva o motivo da perda")
         q.lost_reason = LostReason(payload.lost_reason)
+        q.lost_reason_detail = (payload.lost_reason_detail or "").strip() or None
+    else:
+        q.lost_reason = None
+        q.lost_reason_detail = None
     log_action(db, user, "update_status", "quotes", q.id, after={"status": payload.status}, request=request)
     db.commit()
-    return _serialize_quote(q, db)
+    db.refresh(q)
+    return _serialize_quote(q, db, include_items=True)
 
 
 @router.post("/{quote_id}/approve")

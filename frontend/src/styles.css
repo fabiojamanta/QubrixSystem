@@ -703,6 +703,66 @@ input:read-only:focus {
   border-color: var(--glass-border-subtle);
 }
 
+input[type='checkbox'],
+input[type='radio'] {
+  width: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  box-shadow: none;
+  accent-color: var(--brand);
+  cursor: pointer;
+}
+
+input[type='checkbox']:focus,
+input[type='radio']:focus {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 22%, transparent);
+}
+
+label.form-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  margin: 0 0 12px;
+  border-radius: 12px;
+  border: 1px solid var(--glass-border-subtle);
+  background: var(--glass-input);
+  cursor: pointer;
+  font-weight: 400;
+}
+
+label.form-toggle input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.form-toggle-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.form-toggle-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.form-toggle-desc {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.form-field-inline {
+  max-width: 160px;
+}
+
 /* Botões — padrão único: sempre use class="btn" (+ variantes) */
 button {
   font-family: inherit;
@@ -1517,12 +1577,19 @@ tr.selected {
 
 .modal-dialog {
   width: min(920px, 100%);
+  display: flex;
+  flex-direction: column;
+  max-height: min(92vh, calc(100vh - var(--table-sticky-top) - 24px));
   background: var(--glass-surface-strong);
   backdrop-filter: blur(var(--glass-blur-strong));
   -webkit-backdrop-filter: blur(var(--glass-blur-strong));
   border: 1px solid var(--glass-border-light);
   border-radius: 20px;
   box-shadow: var(--glass-shadow-lg), var(--glass-inset);
+}
+
+.modal-backdrop-stacked {
+  z-index: 1200;
 }
 
 .modal-header {
@@ -1532,6 +1599,7 @@ tr.selected {
   gap: 16px;
   padding: 18px 22px;
   border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  flex-shrink: 0;
 }
 
 .modal-title {
@@ -1562,6 +1630,8 @@ tr.selected {
 
 .modal-body {
   padding: 20px 22px 24px;
+  flex: 1;
+  min-height: 0;
   max-height: min(72vh, calc(100vh - var(--table-sticky-top) - 80px));
   overflow-y: auto;
 }
@@ -1610,6 +1680,15 @@ tr.selected {
   box-shadow:
     0 1px 0 rgba(15, 23, 42, 0.08),
     0 4px 12px rgba(15, 23, 42, 0.04);
+}
+
+/* Tabelas dentro de modal: sticky relativo ao corpo do modal, não ao menu */
+.modal-body .table-wrap thead th,
+.modal-body .table-wrap table > tbody > tr:first-child > th,
+.modal-body .table-wrap table > tr:first-child > th,
+.modal-body .table-wrap .report-grid thead th {
+  top: 0;
+  z-index: 2;
 }
 
 /* Dark mode nativo (#0f172a — sem preto puro) */
@@ -2283,6 +2362,17 @@ html[data-theme='dark'] .top .page-title p {
     box-sizing: border-box;
     min-height: 48px;
     font-size: 16px;
+  }
+
+  input[type='checkbox'],
+  input[type='radio'] {
+    width: auto;
+    min-height: 0;
+  }
+
+  label.form-toggle input[type='checkbox'] {
+    width: 18px;
+    height: 18px;
   }
 
   .page-logo {

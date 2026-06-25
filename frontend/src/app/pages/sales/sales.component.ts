@@ -27,9 +27,14 @@ import { PageHeaderComponent } from '../../shared/page-header.component';
   <div><label>Data final</label><input type="date" [(ngModel)]="filterTo" (ngModelChange)="load()"></div>
 </div>
 @if(summary){
-  <div class="grid grid-2">
+  <div class="grid grid-3">
     <div class="card stat"><b>{{ summary.month_total | currency:'BRL' }}</b><span>Total mês</span></div>
     <div class="card stat"><b>{{ summary.last_year_same_period | currency:'BRL' }}</b><span>Mesmo período ano anterior</span></div>
+    <div class="card stat stat-filtered">
+      <b>{{ summary.filtered_total | currency:'BRL' }}</b>
+      <span>Total filtrado</span>
+      <small>{{ summary.filtered_seller_name }} · {{ summary.filtered_period_label }}</small>
+    </div>
   </div>
 }
 @if(error){<div class="error">{{error}}</div>}
@@ -49,7 +54,11 @@ import { PageHeaderComponent } from '../../shared/page-header.component';
     </div></td></tr>
   }
 } @empty {<tr><td colspan="7" class="empty">Nenhuma venda.</td></tr>}</tbody></table></div>`,
-  styles: [`.inner-card{margin:8px 0}.btn-sm{padding:6px 12px;font-size:13px}`],
+  styles: [`
+.inner-card{margin:8px 0}
+.btn-sm{padding:6px 12px;font-size:13px}
+.stat-filtered small{display:block;margin-top:6px;font-size:12px;color:var(--muted);line-height:1.35}
+`],
 })
 export class SalesComponent implements OnInit {
   rows: any[] = [];
@@ -77,7 +86,12 @@ export class SalesComponent implements OnInit {
       date_from: this.filterFrom || null,
       date_to: this.filterTo || null,
     }).subscribe({ next:(r)=>this.rows=r, error:e=>this.error=formatApiError(e.error?.detail) });
-    this.api.get<any>('/sales/summary', { months: 12 }).subscribe({ next:(s)=>this.summary=s });
+    this.api.get<any>('/sales/summary', {
+      months: 12,
+      user_id: this.filterSellerId,
+      date_from: this.filterFrom || null,
+      date_to: this.filterTo || null,
+    }).subscribe({ next:(s)=>this.summary=s });
   }
   toggle(id:number){
     if(this.expandedId===id){ this.expandedId=null; this.detail=null; return; }
