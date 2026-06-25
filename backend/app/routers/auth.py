@@ -33,14 +33,15 @@ def _user_payload(user: User, db: Session) -> dict:
     }
 
 
-def _set_session(response: Response, user: User, db: Session) -> dict:
+def _set_session(response: Response, user: User, db: Session) -> tuple[dict, str]:
     access = create_access_token({"sub": str(user.id), "profile_id": str(user.profile_id)})
     refresh_plain = generate_refresh_token_plain()
     revoke_all_user_refresh_tokens(db, user.id)
     store_refresh_token(db, user.id, refresh_plain)
     set_auth_cookies(response, access, refresh_plain)
-    set_csrf_cookie(response, generate_csrf_token())
-    return _user_payload(user, db)
+    csrf = generate_csrf_token()
+    set_csrf_cookie(response, csrf)
+    return _user_payload(user, db), csrf
 
 
 @router.post("/login", response_model=SessionResponse)
@@ -59,10 +60,10 @@ def login(payload: Login, request: Request, response: Response, db: Session = De
         db.commit()
         raise HTTPException(status_code=401, detail="Email ou senha inválidos")
     clear_login_lockout(db, payload.email)
-    user_data = _set_session(response, user, db)
+    user_data, csrf = _set_session(response, user, db)
     log_action(db, user, "login", "users", user.id, request=request)
     db.commit()
-    return {"user": user_data}
+    return {"user": user_data, "csrf_token": csrf}
 
 
 @router.post("/refresh", response_model=SessionResponse)
@@ -82,9 +83,16 @@ def refresh_session(request: Request, response: Response, db: Session = Depends(
     )
     if not user:
         raise HTTPException(status_code=401, detail="Usuário não encontrado ou inativo")
-    user_data = _set_session(response, user, db)
+    user_data, csrf = _set_session(response, user, db)
     db.commit()
-    return {"user": user_data}
+    return {"user": user_data, "csrf_token": csrf}
+
+
+@router.get("/csrf")
+def issue_csrf(response: Response):
+    token = generate_csrf_token()
+    set_csrf_cookie(response, token)
+    return {"csrf_token": token}
 
 
 @router.post("/logout")

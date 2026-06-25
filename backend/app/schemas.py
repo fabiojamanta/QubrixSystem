@@ -12,6 +12,7 @@ class Login(BaseModel):
 
 class SessionResponse(BaseModel):
     user: dict
+    csrf_token: str
 
 
 class ProductBase(BaseModel):

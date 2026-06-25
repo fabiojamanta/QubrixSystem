@@ -8,7 +8,7 @@ from .config import settings
 CSRF_COOKIE = "csrf_token"
 CSRF_HEADER = "X-CSRF-Token"
 SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
-CSRF_EXEMPT_PATHS = frozenset({"/", "/auth/login"})
+CSRF_EXEMPT_PATHS = frozenset({"/", "/auth/login", "/auth/refresh"})
 
 
 def generate_csrf_token() -> str:

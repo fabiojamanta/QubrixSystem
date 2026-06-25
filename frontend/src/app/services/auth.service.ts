@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { tap } from 'rxjs';
+import { Observable, of, tap } from 'rxjs';
 import { ApiService } from './api.service';
+import { getCsrfToken, setCsrfToken } from '../core/csrf.util';
 import {
   UserProfile,
   MenuItem,
@@ -50,11 +51,24 @@ export class AuthService {
   }
 
   login(email: string, password: string) {
-    return this.http.post<{ user: { id?: number; profile?: UserProfile; permissions?: PermissionMap } }>(
+    return this.http.post<{ user: { id?: number; profile?: UserProfile; permissions?: PermissionMap }; csrf_token: string }>(
       `${this.api.base}/auth/login`,
       { email, password },
       { withCredentials: true },
-    ).pipe(tap((r) => this.hydrateFromUser(r.user)));
+    ).pipe(tap((r) => {
+      setCsrfToken(r.csrf_token);
+      this.hydrateFromUser(r.user);
+    }));
+  }
+
+  ensureCsrfToken(): Observable<{ csrf_token: string }> {
+    const existing = getCsrfToken();
+    if (existing) {
+      return of({ csrf_token: existing });
+    }
+    return this.http.get<{ csrf_token: string }>(`${this.api.base}/auth/csrf`, { withCredentials: true }).pipe(
+      tap((r) => setCsrfToken(r.csrf_token)),
+    );
   }
 
   hydrateFromUser(u: { id?: number; profile?: UserProfile; permissions?: PermissionMap }) {
@@ -72,6 +86,7 @@ export class AuthService {
 
   clearLocalSession() {
     sessionStorage.removeItem('user');
+    setCsrfToken(null);
     this.profile = null;
     this.permissions = {};
     this.sessionActive = false;
