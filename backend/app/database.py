@@ -7,10 +7,7 @@ from .config import settings
 if settings.DATABASE_URL.startswith("sqlite"):
     connect_args = {"check_same_thread": False}
 elif settings.DATABASE_URL.startswith("postgresql"):
-    connect_args = {
-        "connect_timeout": 10,
-        "options": "-c statement_timeout=60000",
-    }
+    connect_args = {"connect_timeout": 10}
 else:
     connect_args = {}
 

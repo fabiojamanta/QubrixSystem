@@ -3,8 +3,30 @@ from sqlalchemy import inspect, text
 
 from .database import SessionLocal, engine
 
+PATCHES = [
+    ("clients", "registration_number", "registration_number VARCHAR(40)"),
+    ("clients", "responsible_user_id", "responsible_user_id INTEGER"),
+    ("campaigns", "show_early_notice", "show_early_notice BOOLEAN DEFAULT FALSE"),
+    ("campaigns", "early_notice_days", "early_notice_days INTEGER"),
+    ("info_board_items", "start_date", "start_date DATE"),
+    ("info_board_items", "end_date", "end_date DATE"),
+    ("users", "updated_at", "updated_at TIMESTAMP"),
+    ("quotes", "lost_reason_detail", "lost_reason_detail TEXT"),
+]
 
-def _add_column_if_missing(conn, table: str, column: str, ddl: str) -> None:
+SQLITE_PATCHES = [
+    ("clients", "registration_number", "registration_number VARCHAR(40)"),
+    ("clients", "responsible_user_id", "responsible_user_id INTEGER"),
+    ("campaigns", "show_early_notice", "show_early_notice BOOLEAN DEFAULT 0"),
+    ("campaigns", "early_notice_days", "early_notice_days INTEGER"),
+    ("info_board_items", "start_date", "start_date DATE"),
+    ("info_board_items", "end_date", "end_date DATE"),
+    ("users", "updated_at", "updated_at DATETIME"),
+    ("quotes", "lost_reason_detail", "lost_reason_detail TEXT"),
+]
+
+
+def _add_column_sqlite(conn, table: str, column: str, ddl: str) -> None:
     insp = inspect(engine)
     if table not in insp.get_table_names():
         return
@@ -13,21 +35,23 @@ def _add_column_if_missing(conn, table: str, column: str, ddl: str) -> None:
         conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {ddl}"))
 
 
-def apply_schema_patches() -> None:
-    is_sqlite = engine.dialect.name == "sqlite"
-    bool_default = "0" if is_sqlite else "FALSE"
-    datetime_type = "DATETIME" if is_sqlite else "TIMESTAMP"
+def _apply_postgres_patches(conn) -> None:
+    for table, _column, ddl in PATCHES:
+        exists = conn.execute(
+            text("SELECT to_regclass(:name) IS NOT NULL"),
+            {"name": table},
+        ).scalar()
+        if not exists:
+            continue
+        conn.execute(text(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {ddl}"))
 
-    with engine.begin() as conn:
-        _add_column_if_missing(conn, "clients", "registration_number", "registration_number VARCHAR(40)")
-        _add_column_if_missing(conn, "clients", "responsible_user_id", "responsible_user_id INTEGER")
-        _add_column_if_missing(conn, "campaigns", "show_early_notice", f"show_early_notice BOOLEAN DEFAULT {bool_default}")
-        _add_column_if_missing(conn, "campaigns", "early_notice_days", "early_notice_days INTEGER")
-        _add_column_if_missing(conn, "info_board_items", "start_date", "start_date DATE")
-        _add_column_if_missing(conn, "info_board_items", "end_date", "end_date DATE")
-        _add_column_if_missing(conn, "users", "updated_at", f"updated_at {datetime_type}")
-        _add_column_if_missing(conn, "quotes", "lost_reason_detail", "lost_reason_detail TEXT")
 
+def _apply_sqlite_patches(conn) -> None:
+    for table, column, ddl in SQLITE_PATCHES:
+        _add_column_sqlite(conn, table, column, ddl)
+
+
+def _backfill_data() -> None:
     from .models import Client, User
 
     db = SessionLocal()
@@ -46,3 +70,13 @@ def apply_schema_patches() -> None:
             db.commit()
     finally:
         db.close()
+
+
+def apply_schema_patches() -> None:
+    with engine.begin() as conn:
+        if engine.dialect.name == "sqlite":
+            _apply_sqlite_patches(conn)
+        else:
+            _apply_postgres_patches(conn)
+
+    _backfill_data()

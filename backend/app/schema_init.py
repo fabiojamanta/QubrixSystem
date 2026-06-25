@@ -7,7 +7,7 @@ _lock = threading.Lock()
 _ready = False
 _init_error: Exception | None = None
 
-SCHEMA_INIT_TIMEOUT_SECONDS = 90
+SCHEMA_INIT_TIMEOUT_SECONDS = 180
 
 
 class SchemaNotReadyError(RuntimeError):
@@ -27,7 +27,7 @@ def ensure_schema() -> None:
     if _ready:
         return
     if _init_error is not None:
-        raise SchemaNotReadyError(f"Banco indisponível: {_init_error}") from _init_error
+        logger.info("Nova tentativa de inicialização do schema após falha anterior")
 
     acquired = _lock.acquire(timeout=SCHEMA_INIT_TIMEOUT_SECONDS)
     if not acquired:
@@ -39,12 +39,11 @@ def ensure_schema() -> None:
     try:
         if _ready:
             return
-        if _init_error is not None:
-            raise SchemaNotReadyError(f"Banco indisponível: {_init_error}") from _init_error
 
         logger.info("Inicializando schema do banco...")
         _apply_schema()
         _ready = True
+        _init_error = None
         logger.info("Schema do banco pronto")
     except Exception as exc:
         _init_error = exc
