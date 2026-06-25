@@ -1,5 +1,10 @@
+import asyncio
+import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -15,8 +20,10 @@ from .demo_seed import seed_demo_data
 from .middleware import SecurityHeadersMiddleware, CsrfMiddleware
 from .rate_limit import limiter
 
-Base.metadata.create_all(bind=engine)
-apply_schema_patches()
+logger = logging.getLogger(__name__)
+
+_startup_ready = asyncio.Event()
+_startup_error: Exception | None = None
 
 
 def seed():
@@ -38,7 +45,11 @@ def seed():
             "Admin@1234" if not settings.is_production else ""
         )
         if admin_email and admin_password:
-            validate_password_strength(admin_password)
+            try:
+                validate_password_strength(admin_password)
+            except Exception as exc:
+                detail = getattr(exc, "detail", str(exc))
+                raise ValueError(f"ADMIN_PASSWORD inválida: {detail}") from exc
             existing = db.query(User).filter(User.company_id == company.id, User.email == admin_email).first()
             if not existing:
                 db.add(User(
@@ -60,14 +71,41 @@ def seed():
         db.close()
 
 
-seed()
+def init_database() -> None:
+    Base.metadata.create_all(bind=engine)
+    apply_schema_patches()
+    seed()
+
+
+async def _run_startup() -> None:
+    global _startup_error
+    try:
+        await asyncio.to_thread(init_database)
+        logger.info("Banco inicializado com sucesso")
+    except Exception as exc:
+        _startup_error = exc
+        logger.exception("Falha ao inicializar o banco: %s", exc)
+    finally:
+        _startup_ready.set()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    startup_task = asyncio.create_task(_run_startup())
+    yield
+    startup_task.cancel()
+    try:
+        await startup_task
+    except asyncio.CancelledError:
+        pass
+
 
 _docs_kwargs = (
     {"docs_url": None, "redoc_url": None, "openapi_url": None}
     if settings.is_production
     else {}
 )
-app = FastAPI(title=settings.APP_NAME, version="1.0.0", **_docs_kwargs)
+app = FastAPI(title=settings.APP_NAME, version="1.0.0", lifespan=lifespan, **_docs_kwargs)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
@@ -98,4 +136,11 @@ app.include_router(users.router)
 @app.get("/")
 @limiter.limit("60/minute")
 def health(request: Request):
+    if _startup_error is not None:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "error", "app": settings.APP_NAME, "detail": str(_startup_error)},
+        )
+    if not _startup_ready.is_set():
+        return {"status": "starting", "app": settings.APP_NAME}
     return {"status": "online", "app": settings.APP_NAME}
