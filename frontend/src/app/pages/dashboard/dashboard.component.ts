@@ -79,13 +79,20 @@ import { PAGE_LOGOS } from '../../shared/page-logos';
       }
     </section>
 
-    <section class="card dash-panel">
+    <section class="card dash-panel dash-panel-compact">
       <h3 class="dash-section-title">Validade de produtos</h3>
-      <div class="grid grid-3">
-        <div class="card stat"><b>{{ data.expiry_alerts[30] }}</b><span>&lt; 30 dias</span></div>
-        <div class="card stat"><b>{{ data.expiry_alerts[90] }}</b><span>&lt; 90 dias</span></div>
-        <div class="card stat"><b>{{ data.expiry_alerts[180] }}</b><span>&lt; 180 dias</span></div>
-      </div>
+      @for (item of data.expiry_items; track item.id) {
+        <div class="dash-item dash-item-compact"
+          [class.dash-item-danger]="item.bucket === 30"
+          [class.dash-item-warn]="item.bucket === 90"
+          [class.dash-item-ok]="item.bucket === 180">
+          <div class="dash-product-name">{{ item.short_description }}</div>
+          <div class="dash-details">
+            <div class="dash-detail-line">Código: {{ item.code }} · Lote: {{ item.lot_number }} · Qtd: {{ item.quantity }}</div>
+            <div class="dash-detail-line">Validade: {{ item.expiry_date | dateBr }} ({{ item.days_until_expiry }} dia(s))</div>
+          </div>
+        </div>
+      } @empty { <p class="empty">Nenhum produto com validade próxima.</p> }
     </section>
   </div>
 }`,

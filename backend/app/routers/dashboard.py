@@ -120,7 +120,7 @@ def dashboard_summary(
         )
         sales_3m.append({"month": ref.strftime("%Y-%m"), "total": float(total)})
 
-    expiry_buckets = {30: 0, 90: 0, 180: 0}
+    expiry_items = []
     lots = (
         db.query(StockLot)
         .join(Product)
@@ -134,11 +134,27 @@ def dashboard_summary(
         if days < 0:
             continue
         if days <= 30:
-            expiry_buckets[30] += 1
+            bucket = 30
         elif days <= 90:
-            expiry_buckets[90] += 1
+            bucket = 90
         elif days <= 180:
-            expiry_buckets[180] += 1
+            bucket = 180
+        else:
+            continue
+        p = lot.product
+        expiry_items.append(
+            {
+                "id": lot.id,
+                "code": p.code if p else "",
+                "short_description": p.short_description if p else "",
+                "lot_number": lot.lot_number,
+                "quantity": float(lot.quantity or 0),
+                "expiry_date": lot.expiry_date.isoformat(),
+                "days_until_expiry": days,
+                "bucket": bucket,
+            }
+        )
+    expiry_items.sort(key=lambda x: x["days_until_expiry"])
 
     return {
         "campaigns": campaigns,
@@ -163,5 +179,5 @@ def dashboard_summary(
             "last_year_same_period": float(last_year_total),
             "last_3_months": sales_3m,
         },
-        "expiry_alerts": expiry_buckets,
+        "expiry_items": expiry_items,
     }
