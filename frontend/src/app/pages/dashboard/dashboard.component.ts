@@ -79,8 +79,13 @@ import { PAGE_LOGOS } from '../../shared/page-logos';
       }
     </section>
 
-    <section class="card dash-panel dash-panel-compact">
+    <section class="card dash-panel">
       <h3 class="dash-section-title">Validade de produtos</h3>
+      <div class="grid grid-3">
+        <div class="card stat"><b>{{ data.expiry_alerts[30] }}</b><span>&lt; 30 dias</span></div>
+        <div class="card stat"><b>{{ data.expiry_alerts[90] }}</b><span>&lt; 90 dias</span></div>
+        <div class="card stat"><b>{{ data.expiry_alerts[180] }}</b><span>&lt; 180 dias</span></div>
+      </div>
       @for (item of data.expiry_items; track item.id) {
         <div class="dash-item dash-item-compact"
           [class.dash-item-danger]="item.bucket === 30"

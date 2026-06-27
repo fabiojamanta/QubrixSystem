@@ -120,6 +120,7 @@ def dashboard_summary(
         )
         sales_3m.append({"month": ref.strftime("%Y-%m"), "total": float(total)})
 
+    expiry_alerts = {30: 0, 90: 0, 180: 0}
     expiry_items = []
     lots = (
         db.query(StockLot)
@@ -141,6 +142,7 @@ def dashboard_summary(
             bucket = 180
         else:
             continue
+        expiry_alerts[bucket] += 1
         p = lot.product
         expiry_items.append(
             {
@@ -179,5 +181,6 @@ def dashboard_summary(
             "last_year_same_period": float(last_year_total),
             "last_3_months": sales_3m,
         },
+        "expiry_alerts": expiry_alerts,
         "expiry_items": expiry_items,
     }

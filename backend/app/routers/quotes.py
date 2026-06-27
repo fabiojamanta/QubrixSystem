@@ -50,6 +50,13 @@ def _serialize_item(item: QuoteItem, product: Product) -> dict:
     }
 
 
+def _quote_total_amount(q: Quote) -> float:
+    total = Decimal("0")
+    for item in q.items:
+        total += Decimal(str(item.quantity or 0)) * Decimal(str(item.unit_price or 0))
+    return float(total)
+
+
 def _serialize_quote(q: Quote, db: Session, include_items=False) -> dict:
     data = {
         "id": q.id,
@@ -66,20 +73,16 @@ def _serialize_quote(q: Quote, db: Session, include_items=False) -> dict:
         "requires_management_approval": q.requires_management_approval,
         "management_approved": q.management_approved,
         "created_at": q.created_at.isoformat() if q.created_at else None,
-        "total_amount": 0.0,
+        "total_amount": _quote_total_amount(q),
     }
     if include_items:
         items = []
-        total = Decimal("0")
         for item in q.items:
             product = item.product or db.query(Product).get(item.product_id)
             if not product:
                 continue
-            ser = _serialize_item(item, product)
-            items.append(ser)
-            total += Decimal(str(ser["total_price"]))
+            items.append(_serialize_item(item, product))
         data["items"] = items
-        data["total_amount"] = float(total)
     return data
 
 
@@ -97,7 +100,7 @@ def list_quotes(
     assert_menu_access(db, user, "cotacoes", AccessLevel.read)
     query = (
         db.query(Quote)
-        .options(joinedload(Quote.client), joinedload(Quote.user))
+        .options(joinedload(Quote.client), joinedload(Quote.user), joinedload(Quote.items))
         .filter(Quote.company_id == user.company_id)
     )
     if not user_is_management(user):

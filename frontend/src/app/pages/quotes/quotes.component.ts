@@ -56,16 +56,17 @@ type QuoteItemRow = {
 </div>
 @if(error){<div class="error">{{error}}</div>}
 
-<div class="card table-wrap"><table><thead><tr><th>#</th><th>Cliente</th><th>Vendedor</th><th>Status</th><th>Prazo retorno</th><th>Aprovação</th><th></th></tr></thead>
+<div class="card table-wrap"><table><thead><tr><th>#</th><th>Cliente</th><th>Vendedor</th><th>Status</th><th>Total</th><th>Prazo retorno</th><th>Aprovação</th><th></th></tr></thead>
 <tbody>@for(q of rows; track q.id){
   <tr class="clickable" (click)="toggle(q.id)">
     <td>{{q.id}}</td><td>{{q.client_name}}</td><td>{{q.user_name}}</td><td>{{q.status}}</td>
+    <td>{{q.total_amount | currency:'BRL'}}</td>
     <td>{{q.response_deadline | dateBr}}</td>
     <td>@if(q.requires_management_approval){<span class="badge" [class.danger]="!q.management_approved" [class.ok]="q.management_approved">{{ q.management_approved ? 'Autorizada' : 'Pendente' }}</span>} @else { — }</td>
     <td><button type="button" class="btn btn-secondary btn-sm" (click)="$event.stopPropagation(); openDetail(q.id)">Detalhes</button></td>
   </tr>
   @if(expandedId===q.id && detail){
-    <tr><td colspan="7">
+    <tr><td colspan="8">
       <div class="card inner-card">
         @if(detail.status==='perdida'){
           <div class="quote-lost-reason">
@@ -99,9 +100,9 @@ type QuoteItemRow = {
       </div>
     </td></tr>
   }
-} @empty {<tr><td colspan="7" class="empty">Nenhuma cotação.</td></tr>}</tbody></table></div>
+} @empty {<tr><td colspan="8" class="empty">Nenhuma cotação.</td></tr>}</tbody></table></div>
 
-<app-form-modal [open]="createOpen" [title]="createModalTitle" (close)="closeCreate()">
+<app-form-modal [open]="createOpen" [title]="createModalTitle" (close)="requestCloseCreate()">
   <div class="grid grid-3">
     <div class="quote-proposal-head grid-span-full">
       <div class="quote-proposal-number">
@@ -171,8 +172,21 @@ type QuoteItemRow = {
     </table>
   </div>
 
+  <div class="quote-proposal-total">
+    <label>Total da proposta</label>
+    <input readonly [value]="proposalTotal() | currency:'BRL'">
+  </div>
+
   <div class="form-actions">
     <button type="button" class="btn" (click)="saveQuote()">Gerar proposta</button>
+  </div>
+</app-form-modal>
+
+<app-form-modal [open]="discardCreateModalOpen" title="Descartar proposta?" (close)="cancelDiscardCreate()">
+  <p>Deseja realmente sair e perder a cotação que foi iniciada?</p>
+  <div class="form-actions">
+    <button type="button" class="btn" (click)="confirmDiscardCreate()">Sim, descartar</button>
+    <button type="button" class="btn btn-secondary" (click)="cancelDiscardCreate()">Não, continuar</button>
   </div>
 </app-form-modal>
 
@@ -307,6 +321,20 @@ type QuoteItemRow = {
 .quote-field-action .btn { margin: 6px 0 12px; white-space: nowrap; }
 .quote-items-grid { margin-bottom: 16px; }
 .quote-items-grid table { width: 100%; }
+.quote-proposal-total {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-bottom: 16px;
+}
+.quote-proposal-total label {
+  text-align: right;
+}
+.quote-proposal-total input {
+  width: min(220px, 100%);
+  text-align: right;
+  margin-bottom: 0;
+}
 .quote-lost-reason {
   margin-bottom: 12px;
   padding: 10px 12px;
@@ -383,6 +411,7 @@ export class QuotesComponent implements OnInit {
   sellers: { id: number; name: string }[] = [];
   error = '';
   createOpen = false;
+  discardCreateModalOpen = false;
   nextQuoteNumber: number | null = null;
   clientSearchOpen = false;
   clientSearchQuery = '';
@@ -509,8 +538,41 @@ export class QuotesComponent implements OnInit {
   }
   closeCreate() {
     this.createOpen = false;
+    this.discardCreateModalOpen = false;
     this.closeClientSearch();
     this.closeProductSearch();
+  }
+  requestCloseCreate() {
+    if (this.createFormHasDraft()) {
+      this.discardCreateModalOpen = true;
+      return;
+    }
+    this.closeCreate();
+  }
+  cancelDiscardCreate() {
+    this.discardCreateModalOpen = false;
+  }
+  confirmDiscardCreate() {
+    this.createForm = this.emptyCreateForm();
+    this.pendingItem = this.emptyPendingItem();
+    this.nextQuoteNumber = null;
+    this.error = '';
+    this.closeCreate();
+  }
+  createFormHasDraft() {
+    const form = this.createForm;
+    const pending = this.pendingItem;
+    if (form.client_id) return true;
+    if ((form.response_deadline || '').trim()) return true;
+    if ((form.notes || '').trim()) return true;
+    if (form.based_on_quote_id) return true;
+    if (form.items.length > 0) return true;
+    if (pending.product_id) return true;
+    if ((pending.extra_info || '').trim()) return true;
+    if (Number(pending.quantity) !== 1) return true;
+    if (Number(pending.unit_price) > 0) return true;
+    if (pending.description_choice !== 'curta') return true;
+    return false;
   }
   openClientSearch() {
     this.clientSearchOpen = true;
@@ -606,6 +668,9 @@ export class QuotesComponent implements OnInit {
   }
   lineTotal(item: QuoteItemRow) {
     return Number(item.quantity || 0) * Number(item.unit_price || 0);
+  }
+  proposalTotal() {
+    return this.createForm.items.reduce((sum: number, item: QuoteItemRow) => sum + this.lineTotal(item), 0);
   }
   removeItem(index: number) {
     this.createForm.items.splice(index, 1);
